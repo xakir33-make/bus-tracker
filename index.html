@@ -1,70 +1,307 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Bus Seen Tracker</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bus Tracker Pro</title>
+    <style>
+	
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #eef2ff;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --border: #e2e8f0;
+            --input-focus: #4f46e5;
+        }
 
-<style>
-body{font-family:Arial;background:#f6f7fb;padding:20px;max-width:700px;margin:auto}
-.card{background:#fff;padding:15px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.05);margin-bottom:20px}
-button{background:#222;color:#fff;border:none;padding:8px 12px;border-radius:6px;cursor:pointer}
-.small{font-size:12px;padding:4px 8px;margin-left:5px}
-.route{font-weight:bold;margin-top:15px}
-.record{padding:6px 0;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center}
-.modal-box{background:#fff;padding:20px;border-radius:10px;width:320px}
-.modal input{width:100%;padding:7px;margin:6px 0}
-.loader{position:fixed;inset:0;background:rgba(255,255,255,0.6);display:none;align-items:center;justify-content:center;font-size:18px;font-weight:bold}
-.filters input{width:100%;padding:7px;margin:6px 0}
-.group-title{margin-top:8px;font-weight:bold}
-</style>
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body { 
+            background: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0 0 100px 0; /* Space for FAB */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--card);
+            width: 100%;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h2 { margin: 0; font-size: 1.3rem; letter-spacing: -0.5px; }
+
+        .container { 
+            width: 100%; 
+            max-width: 500px; 
+            padding: 16px; 
+        }
+
+        /* --- Input Styling (The Fix) --- */
+        .input-wrapper { margin-bottom: 16px; width: 100%; }
+        
+        .input-wrapper label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            margin-left: 4px;
+            text-transform: uppercase;
+        }
+
+        input:not([type="checkbox"]),
+        select {
+            width: 100%;
+            height: 52px;
+            padding: 0 16px;
+            font-size: 16px;
+            background: #ffffff;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            outline: none;
+            display: block;
+            -webkit-appearance: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px var(--primary-light);
+        }
+
+        /* --- Filter Card --- */
+        .filter-card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+
+        .row { display: flex; gap: 12px; }
+        .row > .input-wrapper { flex: 1; }
+
+        /* --- Record Cards --- */
+        .route-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--primary);
+            margin: 24px 0 10px 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .record-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            border: 1px solid rgba(0,0,0,0.03);
+        }
+
+        .record-main { display: flex; flex-direction: column; }
+        .record-time { font-size: 18px; font-weight: 800; color: var(--text-main); }
+        .record-place { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+
+        .action-btns { display: flex; gap: 8px; }
+        .btn-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: none;
+            background: var(--bg);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn-circle.delete { color: var(--danger); background: #fee2e2; }
+
+        /* --- Floating Action Button --- */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 20px;
+            width: 64px;
+            height: 64px;
+            background: var(--primary);
+            color: white;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            border: none;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.9); }
+
+        /* --- Modal (Bottom Sheet) --- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 200;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-sheet {
+            background: var(--card);
+            width: 100%;
+            max-width: 500px;
+            padding: 24px;
+            border-radius: 30px 30px 0 0;
+            animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .btn-block {
+            width: 100%;
+            height: 54px;
+            border-radius: 16px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 12px;
+            cursor: pointer;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-ghost { background: transparent; color: var(--text-muted); }
+
+        .loader {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .group-header {
+            background: #f8fafc;
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin: 15px 0 8px 0;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>Bus Records</h2>
-  <button onclick="openModal()">+ Mark Bus Seen</button>
+<header>
+    <h2>🚌 BusTracker</h2>
+    <div style="width: 10px; height: 10px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e;"></div>
+</header>
+
+<div class="container">
+    <div class="filter-card">
+        <div class="input-wrapper">
+            <label>Search Route</label>
+            <input id="searchRoute" list="routeList" placeholder="e.g. Town to City..." oninput="loadList()">
+            <datalist id="routeList"></datalist>
+        </div>
+        
+        <div class="row">
+            <div class="input-wrapper">
+                <label>From</label>
+                <input type="time" id="fromTime" oninput="loadList()">
+            </div>
+            <div class="input-wrapper">
+                <label>To</label>
+                <input type="time" id="toTime" oninput="loadList()">
+            </div>
+        </div>
+
+        <label style="display: flex; align-items: center; font-size: 14px; color: var(--text-muted); font-weight: 600;">
+            <input type="checkbox" id="groupTimes" onchange="loadList()" style="width: 18px; height: 18px; margin-right: 10px;">
+            Group similar times
+        </label>
+    </div>
+
+    <div id="list"></div>
 </div>
 
-<div class="card filters">
-  <h3>Filter</h3>
+<button class="fab" onclick="openModal()">+</button>
 
-  <input id="searchRoute" list="routeList" 
-         placeholder="Search routes (e.g., Gudalur to Ponvayal)" 
-         oninput="loadList()">
-  <datalist id="routeList"></datalist>
+<div class="modal-overlay" id="modal">
+    <div class="modal-sheet">
+        <h3 style="margin: 0 0 20px 0; font-size: 1.4rem;">Mark Bus Seen</h3>
+        
+        <div class="row">
+            <div class="input-wrapper">
+                <label>From</label>
+                <input id="from" placeholder="Origin">
+            </div>
+            <div class="input-wrapper">
+                <label>To</label>
+                <input id="to" placeholder="Destination">
+            </div>
+        </div>
 
-  <label>From Time</label>
-  <input type="time" id="fromTime" oninput="loadList()">
+        <div class="input-wrapper">
+            <label>Time & Date</label>
+            <input id="time" type="datetime-local">
+            <button class="btn-block btn-ghost" style="height: auto; padding: 10px; font-size: 13px;" onclick="setNow()">📍 Use Current Time</button>
+        </div>
 
-  <label>To Time</label>
-  <input type="time" id="toTime" oninput="loadList()">
+        <div class="input-wrapper">
+            <label>Location Seen</label>
+            <input id="place" placeholder="e.g. Main Stand">
+        </div>
 
-  <label>
-    <input type="checkbox" id="groupTimes" onchange="loadList()">
-    Group similar bus times
-  </label>
+        <button class="btn-block btn-primary" onclick="saveBus()">Save Sighting</button>
+        <button class="btn-block btn-ghost" onclick="closeModal()">Cancel</button>
+    </div>
 </div>
 
-<div class="card">
-  <div id="list"></div>
+<div class="loader" id="loader">
+    <div style="width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite;"></div>
+    <p style="font-weight: 700; margin-top: 15px;">Syncing...</p>
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
-  <div class="modal-box">
-    <h3>Mark Bus Seen</h3>
-    <input id="from" placeholder="From">
-    <input id="to" placeholder="To">
-    <input id="time" type="datetime-local">
-    <button onclick="setNow()">Use Current Time</button>
-    <input id="place" placeholder="Seen Place">
-    <button onclick="saveBus()">Save</button>
-    <button onclick="closeModal()">Cancel</button>
-  </div>
-</div>
-
-<div class="loader" id="loader">Loading...</div>
+<style> @keyframes spin { to { transform: rotate(360deg); } } </style>
 
 <script>
 const BIN_ID = "6992bfd3ae596e708f2e6fdc";
@@ -74,181 +311,150 @@ const URL=`https://api.jsonbin.io/v3/b/${BIN_ID}`;
 let editIndex=-1;
 let cache=[];
 
-function showLoader(s){
-  document.getElementById("loader").style.display=s?"flex":"none";
-}
-
-function openModal(){document.getElementById("modal").style.display="flex"}
-function closeModal(){document.getElementById("modal").style.display="none";editIndex=-1}
+function showLoader(s){ document.getElementById("loader").style.display=s?"flex":"none"; }
+function openModal(){ document.getElementById("modal").style.display="flex"; if(editIndex===-1) setNow();}
+function closeModal(){ document.getElementById("modal").style.display="none"; editIndex=-1; }
 
 async function fetchData(){
-  showLoader(true);
-  const res=await fetch(URL,{headers:{"X-Master-Key":API_KEY}});
-  const data=await res.json();
-  cache=data.record||[];
-  showLoader(false);
+    showLoader(true);
+    try {
+        const res=await fetch(URL,{headers:{"X-Master-Key":API_KEY}});
+        const data=await res.json();
+        cache=data.record||[];
+    } catch(e) { console.error(e); }
+    showLoader(false);
 }
 
 async function saveData(){
-  showLoader(true);
-  await fetch(URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(cache)});
-  showLoader(false);
+    showLoader(true);
+    await fetch(URL,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":API_KEY},body:JSON.stringify(cache)});
+    showLoader(false);
 }
 
 function setNow(){
-  const now=new Date();
-  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
-  document.getElementById("time").value=now.toISOString().slice(0,16);
+    const now=new Date();
+    now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+    document.getElementById("time").value=now.toISOString().slice(0,16);
 }
 
 function timeOnly(t){
-  const d=new Date(t);
-  return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    return new Date(t).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
 }
 
-function routeName(r){return (r.from||"-")+" to "+(r.to||"-")}
+function routeName(r){return (r.from||"-")+" → "+(r.to||"-")}
 function getMinutes(t){const d=new Date(t);return d.getHours()*60+d.getMinutes()}
 
 async function saveBus(){
-  const from=document.getElementById("from").value.trim();
-  const to=document.getElementById("to").value.trim();
-  const time=document.getElementById("time").value;
-  const place=document.getElementById("place").value.trim();
+    const from=document.getElementById("from").value.trim();
+    const to=document.getElementById("to").value.trim();
+    const time=document.getElementById("time").value;
+    const place=document.getElementById("place").value.trim();
 
-  if(!from && !to) return alert("From or To required");
-  if(!time||!place) return alert("Time & Place required");
+    if(!from || !to || !time || !place) return alert("Please fill all fields");
 
-  const obj={from,to,time,place};
+    const obj={from,to,time,place};
+    if(editIndex>-1){cache[editIndex]=obj;}else{cache.push(obj);}
 
-  if(editIndex>-1){cache[editIndex]=obj;}else{cache.push(obj);}
-
-  await saveData();
-
-  document.getElementById("from").value="";
-  document.getElementById("to").value="";
-  document.getElementById("time").value="";
-  document.getElementById("place").value="";
-
-  closeModal();
-  loadList();
+    await saveData();
+    ["from","to","time","place"].forEach(id=>document.getElementById(id).value="");
+    closeModal();
+    loadList();
 }
 
 async function deleteRecord(i){
-  cache.splice(i,1);
-  await saveData();
-  loadList();
+    if(confirm("Delete this entry?")){
+        cache.splice(i,1);
+        await saveData();
+        loadList();
+    }
 }
 
 function editRecord(i){
-  const r=cache[i];
-  document.getElementById("from").value=r.from;
-  document.getElementById("to").value=r.to;
-  document.getElementById("time").value=r.time;
-  document.getElementById("place").value=r.place;
-  editIndex=i;
-  openModal();
-}
-
-function updateDatalist(routes){
-  const dl=document.getElementById("routeList");
-  dl.innerHTML="";
-  routes.forEach(r=>{
-    const opt=document.createElement("option");
-    opt.value=r;
-    dl.appendChild(opt);
-  });
+    const r=cache[i];
+    document.getElementById("from").value=r.from;
+    document.getElementById("to").value=r.to;
+    document.getElementById("time").value=r.time;
+    document.getElementById("place").value=r.place;
+    editIndex=i;
+    openModal();
 }
 
 function loadList(){
-  const search=document.getElementById("searchRoute").value.toLowerCase();
-  const ft=document.getElementById("fromTime").value;
-  const tt=document.getElementById("toTime").value;
-  const groupEnabled=document.getElementById("groupTimes").checked;
+    const search=document.getElementById("searchRoute").value.toLowerCase();
+    const ft=document.getElementById("fromTime").value;
+    const tt=document.getElementById("toTime").value;
+    const groupEnabled=document.getElementById("groupTimes").checked;
 
-  const grouped={};
+    const grouped={};
+    cache.forEach((r,i)=>{
+        const route=routeName(r);
+        if(!grouped[route]) grouped[route]=[];
+        grouped[route].push({...r,i});
+    });
 
-  cache.forEach((r,i)=>{
-    const route=routeName(r);
-    if(!grouped[route]) grouped[route]=[];
-    grouped[route].push({...r,i});
-  });
+    // Update Datalist
+    const dl=document.getElementById("routeList");
+    dl.innerHTML="";
+    Object.keys(grouped).forEach(r=>{
+        const opt=document.createElement("option");
+        opt.value=r;
+        dl.appendChild(opt);
+    });
 
-  updateDatalist(Object.keys(grouped));
+    let html="";
+    Object.keys(grouped).forEach(route=>{
+        if(search && !route.toLowerCase().includes(search)) return;
 
-  let html="";
+        let routeRecords=grouped[route].filter(r=>{
+            const mins=getMinutes(r.time);
+            if(ft){const f=ft.split(":"); if(mins < (f[0]*60+ +f[1])) return false;}
+            if(tt){const t=tt.split(":"); if(mins > (t[0]*60+ +f[1])) return false;}
+            return true;
+        }).sort((a,b)=>getMinutes(b.time)-getMinutes(a.time));
 
-  Object.keys(grouped).forEach(route=>{
-    if(search && !route.toLowerCase().includes(search)) return;
+        if(routeRecords.length > 0) html+=`<div class="route-title">${route}</div>`;
 
-    html+=`<div class="route">${route}</div>`;
-
-    let routeRecords=grouped[route]
-      .filter(r=>{
-        const mins=getMinutes(r.time);
-        if(ft){const f=ft.split(":"); if(mins < (f[0]*60+ +f[1])) return false;}
-        if(tt){const t=tt.split(":"); if(mins > (t[0]*60+ +t[1])) return false;}
-        return true;
-      })
-      .sort((a,b)=>getMinutes(b.time)-getMinutes(a.time));
-
-    if(!groupEnabled){
-      routeRecords.forEach(r=>{
-        html+=`<div class="record">
-          <div>${timeOnly(r.time)} - ${r.place}</div>
-          <div>
-            <button class="small" onclick="editRecord(${r.i})">Edit</button>
-            <button class="small" onclick="deleteRecord(${r.i})">Delete</button>
-          </div>
-        </div>`;
-      });
-    }else{
-      const groups=[];
-      const window=20;
-
-      routeRecords.forEach(r=>{
-        const mins=getMinutes(r.time);
-        let placed=false;
-
-        for(let g of groups){
-          if(Math.abs(g.avg - mins) <= window){
-            g.items.push(r);
-            g.avg=(g.avg+mins)/2;
-            placed=true;
-            break;
-          }
+        if(!groupEnabled){
+            routeRecords.forEach(r => html += renderItem(r));
+        }else{
+            const groups=[];
+            routeRecords.forEach(r=>{
+                const mins=getMinutes(r.time);
+                let placed=false;
+                for(let g of groups){
+                    if(Math.abs(g.avg - mins) <= 20){
+                        g.items.push(r);
+                        g.avg=(g.avg+mins)/2;
+                        placed=true; break;
+                    }
+                }
+                if(!placed) groups.push({avg:mins,items:[r]});
+            });
+            groups.forEach(g=>{
+                const label=new Date(0,0,0,Math.floor(g.avg/60),Math.round(g.avg%60)).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                html+=`<div><span class="group-header">Around ${label}</span></div>`;
+                g.items.forEach(r=> html+=renderItem(r));
+            });
         }
-
-        if(!placed){groups.push({avg:mins,items:[r]});}
-      });
-
-      groups.forEach(g=>{
-        const avgHour=Math.floor(g.avg/60);
-        const avgMin=Math.round(g.avg%60);
-        const label=new Date(0,0,0,avgHour,avgMin)
-          .toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-
-        html+=`<div class="group-title">🚌 Around ${label}</div>`;
-
-        g.items.forEach(r=>{
-          html+=`<div class="record">
-            <div>${timeOnly(r.time)} - ${r.place}</div>
-            <div>
-              <button class="small" onclick="editRecord(${r.i})">Edit</button>
-              <button class="small" onclick="deleteRecord(${r.i})">Delete</button>
-            </div>
-          </div>`;
-        });
-      });
-    }
-  });
-
-  document.getElementById("list").innerHTML=html||"No records";
+    });
+    document.getElementById("list").innerHTML=html||"<p style='text-align:center;color:#94a3b8;margin-top:40px;'>No records found</p>";
 }
 
-(async function init(){
-  await fetchData();
-  loadList();
-})();
+function renderItem(r){
+    return `
+        <div class="record-card">
+            <div class="record-main">
+                <span class="record-time">${timeOnly(r.time)}</span>
+                <span class="record-place">${r.place}</span>
+            </div>
+            <div class="action-btns">
+                <button class="btn-circle" onclick="editRecord(${r.i})">✎</button>
+                <button class="btn-circle delete" onclick="deleteRecord(${r.i})">✕</button>
+            </div>
+        </div>`;
+}
+
+(async function(){ await fetchData(); loadList(); })();
 </script>
 </body>
 </html>
